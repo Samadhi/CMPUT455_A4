@@ -10,8 +10,8 @@ from board_base import DEFAULT_SIZE, GO_POINT, GO_COLOR
 from board import GoBoard
 from board_util import GoBoardUtil
 from engine import GoEngine
-import time
-import random
+import copy
+
 from board_base import (
     BLACK,
     WHITE,
@@ -25,31 +25,47 @@ from board_base import (
 )
 
 
-class A4SubmissionPlayer(GoEngine):
-    def __init__(self) -> None:
-        """
-        Starter code for assignment 4
-        """
-        GoEngine.__init__(self, "Go0", 1.0)
-        self.time_limit = 1
+class SimulationPlayer(GoEngine):
+    def __init__(self, numSimulations):
+        self.numSimulations = numSimulations
 
-    def get_move(self, board: GoBoard, color: GO_COLOR) -> GO_POINT:
-        """
-        Implement for assignment 4
-        """
-        pass
+    def name(self):
+        return "Simulation Player ({0} sim.)".format(self.numSimulations)
 
-    def set_time_limit(self, time_limit):
-        self.time_limit = time_limit
+    def genmove(self, state: GoBoard):
+        moves = state.get_empty_points()
+        numMoves = len(moves)
+        score = [0] * numMoves
+        for i in range(numMoves):
+            move = moves[i]
+            score[i] = self.simulate(state, move)
+        bestIndex = score.index(max(score))
+        best = moves[bestIndex]
+        return best
+
+    def simulate(self, state: GoBoard, move: GO_POINT):
+        stats = [0] * 3
+        state_copy = copy.deepcopy(state)
+        state_copy.play_move(move, state.current_player)
+        for i in range(self.numSimulations):
+            winner = state_copy.simulateMoves(move)
+            stats[winner] += 1
+            state_copy = copy.deepcopy(state)
+        
+        assert sum(stats) == self.numSimulations
+        eval = (stats[BLACK] + 0.5 * stats[EMPTY]) / self.numSimulations
+        if state.current_player == WHITE:
+            eval = 1 - eval
+        return eval
 
 def run() -> None:
     """
     start the gtp connection and wait for commands.
     """
     board: GoBoard = GoBoard(DEFAULT_SIZE)
-    con: GtpConnection = GtpConnection(A4SubmissionPlayer(), board)
+    sim: SimulationPlayer = SimulationPlayer(10)
+    con: GtpConnection = GtpConnection(sim, board)
     con.start_connection()
-
 
 if __name__ == "__main__":
     run()

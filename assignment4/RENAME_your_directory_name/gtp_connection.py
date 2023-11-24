@@ -444,7 +444,7 @@ class GtpConnection:
         
         # choses best move
         if (self.policytype == "random"):
-            move = self.simulation.genmove(self.board)
+            move = self.engine.genmove(self.board)
             coords: Tuple[int, int] = point_to_coord(move, self.board.size)
             formated_move = (format_point(coords)).lower()
             self.play_cmd([board_color, formated_move, 'print_move'])

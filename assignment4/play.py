@@ -1,7 +1,7 @@
 import pexpect
 
 #Change the paths here to test different players
-player1='random_player/Ninuki-random.py'
+player1='our_player/Ninuki-random.py'
 player2='ab_player/Ninuki-ab.py'
 
 #Change the timeout to test different time limits
@@ -9,7 +9,7 @@ player2='ab_player/Ninuki-ab.py'
 timeout=1
 
 #Change the number of games played by the script
-numGames = 10
+numGames = 1
 
 win1=0
 win2=0

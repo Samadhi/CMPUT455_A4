@@ -30,6 +30,7 @@ from board_base import (
 from board import GoBoard
 from board_util import GoBoardUtil
 from engine import GoEngine
+from MCTS import MCTS
 
 class GtpConnection:
     def __init__(self, engine: GoEngine, board: GoBoard, debug_mode: bool = False) -> None:
@@ -420,6 +421,42 @@ class GtpConnection:
         if len(rlist) != 0:
             self.format_moves(rlist)
             return ["Random",rlist]
+        
+
+    def policy_moves(self):
+        ''' will return True or False if a pattern matches'''
+
+        '''board_copy = copy.deepcopy(self.board)
+        #checks for wins
+        rlist = board_copy.Win()
+        if len(rlist) != 0:
+            moves = self.format_moves(rlist)
+            return ["Win",moves] 
+        board_copy = copy.deepcopy(self.board)
+        # checks for blocks wins
+        rlist = board_copy.BlockWin()
+        if len(rlist) != 0:
+            moves = self.format_moves(rlist)
+            return ["BlockWin",moves]
+        # checks for open 4
+        board_copy = copy.deepcopy(self.board)
+        rlist = board_copy.OpenFour()
+        if len(rlist) != 0:
+            moves = self.format_moves(rlist)
+            return ["OpenFour",moves]
+        board_copy = copy.deepcopy(self.board)
+        #checks for captures
+        rlist = board_copy.Capture()
+        if len(rlist) != 0:
+            moves = self.format_moves(rlist)
+            return ["Capture",moves]
+        #returns random move
+        board_copy = copy.deepcopy(self.board)
+        rlist = self.board.Random()
+        if len(rlist) != 0:
+            self.format_moves(rlist)
+            return ["Random",rlist]'''
+        pass
 
     def genmove_cmd(self, args: List[str]) -> None:
         # board_color = args[0].lower()
@@ -443,7 +480,10 @@ class GtpConnection:
             return
         
         # choses best move
-        if (self.policytype == "random"):
+        choose_best_move = MCTS.getActionProb(self.board)
+        self.play_cmd([board_color, max(choose_best_move), 'print_move'])
+        
+        '''if (self.policytype == "random"):
             move = self.engine.genmove(self.board)
             coords: Tuple[int, int] = point_to_coord(move, self.board.size)
             formated_move = (format_point(coords)).lower()
@@ -452,7 +492,7 @@ class GtpConnection:
             rlist = self.rule_based()
             moves = rlist[1]
             moves_to_play = moves[0]+moves[1]
-            self.play_cmd([board_color, moves_to_play, 'print_move'])
+            self.play_cmd([board_color, moves_to_play, 'print_move'])'''
     
     """
     ==========================================================================

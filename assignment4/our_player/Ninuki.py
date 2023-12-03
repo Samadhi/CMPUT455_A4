@@ -60,7 +60,7 @@ class SimulationPlayer(GoEngine):
     
     # need to call MCTS file
     
-class MCTS:
+"""class MCTS:
 
     def __init__(self) -> None:
         self.root: 'TreeNode' = TreeNode(BLACK)
@@ -69,13 +69,14 @@ class MCTS:
     
     def search(self, board: GoBoard, color: GO_COLOR) -> None:
         """
+"""
         Run a single playout from the root to the given depth, getting a value at the leaf and
         propagating it back through its parents. State is modified in-place, so a copy must be
         provided.
         Arguments:
         board -- a copy of the board.
-        color -- color to play
-        """
+        color -- color to play"""
+"""
         node = self.root
         # This will be True only once for the root
         if not node.expanded:
@@ -94,9 +95,9 @@ class MCTS:
     
     def rollout(self, board: GoBoard, color: GO_COLOR) -> GO_COLOR:
         """
-        Use the rollout policy to play until the end of the game, returning the winner of the game
-        +1 if black wins, +2 if white wins, 0 if it is a tie.
-        """
+"""Use the rollout policy to play until the end of the game, returning the winner of the game
+        +1 if black wins, +2 if white wins, 0 if it is a tie."""
+"""
         # FeatureMoves.playGame will run a simulation game according to given parameters.
         winner = FeatureMoves.playGame(
             board,
@@ -119,8 +120,8 @@ class MCTS:
         in_tree_knowledge: bool,
     ) -> GO_POINT:
         """
-        Runs all playouts sequentially and returns the most visited move.
-        """
+"""Runs all playouts sequentially and returns the most visited move."""
+"""
         if self.toplay != color:
             sys.stderr.write("Tree is for wrong color to play. Deleting.\n")
             sys.stderr.flush()
@@ -145,15 +146,15 @@ class MCTS:
     
     def update_with_move(self, last_move: GO_POINT) -> None:
         """
-        Step forward in the tree, keeping everything we already know about the subtree, assuming
-        that get_move() has been called already. Siblings of the new root will be garbage-collected.
-        """
+"""Step forward in the tree, keeping everything we already know about the subtree, assuming
+        that get_move() has been called already. Siblings of the new root will be garbage-collected."""
+"""
         if last_move in self.root.children:
             self.root = self.root.children[last_move]
         else:
             self.root = TreeNode(opponent(self.toplay))
         self.root.parent = self.root
-        self.toplay = opponent(self.toplay)
+        self.toplay = opponent(self.toplay)"""
 
 def run() -> None:
     """

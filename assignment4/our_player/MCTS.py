@@ -47,6 +47,7 @@ class MCTS:
         Returns:
             probs: a policy vector
         """
+        print("############################## /n /n ")
         #self.game.beginSearch()
         #for _ in range(self.args.numMCTSSims): # change to a while loop where the end condition is our time limit
         while ((time.process_time()-self.time_start) >= self.max_time):

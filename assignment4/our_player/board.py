@@ -135,6 +135,41 @@ class GoBoard(object):
         """
         return where1d(self.board == EMPTY)
 
+    def check_board_empty(self) -> bool:
+        return np.all(self.board == EMPTY) 
+
+    def check_corner_empty(self):
+        corners = [(1,1),(1,self.size), (self.size,1),(self.size, self.size)]
+        for c in corners:
+            row, col = c
+            if self.get_color(self.pt(row,col)) != EMPTY:
+                return True
+    
+    def check_centre_empty(self):
+        centre = (self.size // 2+1, self.size // 2+1)
+        return self.get_color(self.pt(*centre)) == EMPTY
+
+    def centre_play(self):
+        centre = (self.size // 2+1, self.size // 2+1)
+        self.play_move(self.pt(*centre), self.current_player)
+
+    def corner_play(self):
+        empty_corner = [(1,1),(1,self.size), (self.size,1),(self.size, self.size)]
+        random.shuffle(empty_corner)
+        for c in empty_corner:
+            row, col = c
+            if self.get_color(self.pt(row,col)) == EMPTY:
+                self.play_move(self.pt(row,col), self.current_player)
+                break
+    
+    def play_next_to_last_player_move(self):
+        if self.last_move != NO_POINT and self.last_move != PASS:
+            neighbors = self._neighbors(self.last_move)
+            empty_neighbors = [nb for nb in neighbors if self.get_color(nb)]
+            if empty_neighbors == EMPTY:
+                random.shuffle(empty_neighbors)
+                self.play_move(empty_neighbors[0], self.current_player)
+
     def row_start(self, row: int) -> int:
         assert row >= 1
         assert row <= self.size
@@ -232,6 +267,262 @@ class GoBoard(object):
             board_moves.append(self.last2_move)
         return board_moves
 
+    def play_move_conditions(self):
+        if np.all(self.board == EMPTY):
+        #if board empty then play in the centre
+            centre = (self.size // 2 + 1, self.size // 2 + 1)
+            self.play_move(self.pt(*centre), self.current_player)
+        elif all(self.get_color(self.pt(row, col)) != EMPTY for row, col in [(1, 1), (1, self.size), (self.size, 1), (self.size, self.size)]):
+        # If all four corners are full, play in the centre
+            centre = (self.size // 2 + 1, self.size // 2 + 1)
+            self.play_move(self.pt(*centre), self.current_player)
+        elif self.get_color(self.pt(self.size // 2 + 1, self.size // 2 + 1)) != EMPTY:
+        # If centre is full, play in the empty corner
+            empty_corners = [(1, 1), (1, self.size), (self.size, 1), (self.size, self.size)]
+            random.shuffle(empty_corners)
+            for c in empty_corners:
+                row, col = c
+                if self.get_color(self.pt(row, col)) == EMPTY:
+                    self.play_move(self.pt(row, col), self.current_player)
+                    return
+        else:
+        # If both corners and the centre are full, play next to the last player's move
+            if self.last_move != NO_POINT and self.last_move != PASS:
+                neighbors = self._neighbors(self.last_move)
+                empty_neighbors = [nb for nb in neighbors if self.get_color(nb) == EMPTY]
+                if empty_neighbors:
+                    random.shuffle(empty_neighbors)
+                    self.play_move(empty_neighbors[0], self.current_player)
+
+
+    def Win(self):
+        winning_moves = []
+        legal_moves = self.get_empty_points()
+        player_color = self.current_player
+
+        for move in legal_moves:    
+            # check for 5 in a row
+            self.play_move(move, player_color)
+            color = self.detect_five_in_a_row()
+            if color == player_color:
+                winning_moves.append(move)
+
+            # check captures
+            if player_color == WHITE and self.white_captures >= 10:
+                    winning_moves.append(move)
+                    self.white_captures -= 2
+            if player_color == BLACK and self.black_captures >= 10:
+                    winning_moves.append(move)
+                    self.black_captures -= 2
+
+            # reset points filled back to empty
+            self.board[move] = EMPTY
+
+        return winning_moves
+        
+    def BlockWin(self):
+        winPoints = []
+        empty_points = self.get_empty_points()
+
+        # check if there is a five in a row
+        for point in empty_points:
+            if self.current_player == WHITE:
+                previous_captures = self.black_captures
+            else:
+                previous_captures = self.white_captures
+            
+            self.play_move(point, opponent(self.current_player))
+            color = self.detect_five_in_a_row()
+
+            if color == opponent(self.current_player):
+                winPoints.append(point)
+            
+            if previous_captures == 8:
+                if self.current_player == WHITE and previous_captures < self.black_captures:
+                    winPoints.append(point)
+                    self.black_captures -= 2
+                elif self.current_player == BLACK and previous_captures < self.white_captures:
+                    winPoints.append(point)
+                    self.white_captures -= 2
+            self.board[point] = EMPTY
+
+        return winPoints
+    
+    def OpenThree(self):
+        open_three_moves = []
+        legal_moves = self.get_empty_points()
+        player_color = self.current_player
+        # check in each row, col, and diagonal if there is an open three
+        for move in legal_moves:
+            board_copy = self.board.copy()
+            self.play_move(move, player_color)
+            color = self.detect_three_in_a_row(move)
+            if color == player_color:
+                open_three_moves.append(move)
+            self.board[move] = EMPTY
+            self.board = board_copy
+
+        return open_three_moves
+
+    def DoubleOpenThree(self):
+        double_open_three_moves = []
+        legal_moves = self.get_empty_points()
+        player_color = self.current_player
+        for move in legal_moves:
+            board_copy = self.board.copy()
+            self.play_move(move, player_color)
+            color = self.detect_three_in_a_row(move)
+        
+            if color == player_color:
+                for second_move in legal_moves:
+                    if second_move != move:
+                        self.play_move(second_move, player_color)
+                        second_color = self.detect_three_in_a_row(second_move)
+                        if second_color == player_color:
+                            double_open_three_moves.append((move, second_move))
+                        self.board[second_move] = EMPTY
+            self.board[move] = EMPTY
+            self.board = board_copy
+    
+        return double_open_three_moves
+
+    def OpenFour(self):
+        open_four_moves = []
+        legal_moves = self.get_empty_points()
+        player_color = self.current_player
+        # check in each row, col, and diagonal if there is 4 in a list
+        for move in legal_moves:
+            board_copy = self.board.copy()
+            self.play_move(move, player_color)
+            color = self.detect_four_in_a_row(move)
+            if color == player_color:
+                open_four_moves.append(move)
+            self.board[move] = EMPTY
+            self.board = board_copy
+
+        return open_four_moves
+
+    def DoubleOpenFour(self):
+        double_open_four_moves = []
+        legal_moves = self.get_empty_points()
+        player_color = self.current_player
+        for move in legal_moves:
+            board_copy = self.board.copy()
+            self.play_move(move, player_color)
+            color = self.detect_four_in_a_row(move)
+        
+            if color == player_color:
+                for second_move in legal_moves:
+                    if second_move != move:
+                        self.play_move(second_move, player_color)
+                        second_color = self.detect_four_in_a_row(second_move)
+                        if second_color == player_color:
+                            double_open_four_moves.append((move, second_move))
+                        self.board[second_move] = EMPTY
+            self.board[move] = EMPTY
+            self.board = board_copy
+    
+        return double_open_four_moves   
+        
+    def Capture(self):
+        captured_moves = []
+        legal_moves = self.get_empty_points()
+        player_color = self.current_player#doubt = when we were playing it. it was alternating players with only self.current player, so shoudld it do that or it should be consistent??
+
+        for move in legal_moves:#to play a move
+            
+            if player_color == WHITE:#previous_captures is there so we can chcek stuff later on depending on the player 
+                previous_captures = self.white_captures
+            else:
+                previous_captures = self.black_captures
+        
+            board_copy = self.board.copy()#a copy of board is created before playing each move. move is played on the copy of the board and original board is restored after checking for captures.
+            self.play_move(move,player_color)
+
+            if player_color == WHITE and previous_captures < self.white_captures:#we played a move and white captures would have more than previous captures if it captured something
+            #if we did capture in the move we played white should be more  
+                captured_moves.append(move)
+                self.white_captures -= 2 #resetting the white captures to its original state 
+            if player_color == BLACK and previous_captures < self.black_captures:
+                captured_moves.append(move)
+                self.white_captures -= 2
+
+            self.board = board_copy 
+        return captured_moves
+            
+            
+    def Random(self):
+        legal_moves = self.get_empty_points()
+        return legal_moves
+
+    def detect_three_in_a_row(self, move) -> GO_COLOR:
+    
+        for r in self.rows:
+            result = self.has_three_in_list(r, move)
+            if result != EMPTY:
+                return result
+        for c in self.cols:
+            result = self.has_three_in_list(c, move)
+            if result != EMPTY:
+                return result
+        for d in self.diags:
+            result = self.has_three_in_list(d, move)
+            if result != EMPTY:
+                return result
+        return EMPTY
+
+    def has_three_in_list(self, list, move) -> GO_COLOR:
+        prev = BORDER
+        counter = 1
+        three_in_list = []
+        for stone in list:
+            if self.get_color(stone) == prev and self.get_color(stone)!= EMPTY:
+                three_in_list.append(stone)
+                if len(three_in_list) == 3:
+                    if self.get_color(stone-2) == self.get_color(stone):
+                        three_in_list.append(stone-2)
+                counter += 1
+            else:
+                counter = 1
+                prev = self.get_color(stone)
+            if counter == 3 and prev != EMPTY and move in three_in_list:
+                return prev
+        return EMPTY
+
+    def detect_four_in_a_row(self, move) -> GO_COLOR:
+    
+        for r in self.rows:
+            result = self.has_four_in_list(r, move)
+            if result != EMPTY:
+                return result
+        for c in self.cols:
+            result = self.has_four_in_list(c, move)
+            if result != EMPTY:
+                return result
+        for d in self.diags:
+            result = self.has_four_in_list(d, move)
+            if result != EMPTY:
+                return result
+        return EMPTY
+
+    def has_four_in_list(self, list, move) -> GO_COLOR:
+        prev = BORDER
+        counter = 1
+        four_in_list = []
+        for stone in list:
+            if self.get_color(stone) == prev and self.get_color(stone)!= EMPTY:
+                four_in_list.append(stone)
+                if len(four_in_list) == 3:
+                    if self.get_color(stone-3) == self.get_color(stone):
+                        four_in_list.append(stone-3)
+                counter += 1
+            else:
+                counter = 1
+                prev = self.get_color(stone)
+            if counter == 4 and prev != EMPTY and move in four_in_list:
+                return prev
+        return EMPTY
+
     def full_board_detect_five_in_a_row(self) -> GO_COLOR:
         """
         Returns BLACK or WHITE if any five in a row is detected for the color
@@ -242,7 +533,7 @@ class GoBoard(object):
             c = self.board[point]
             if c != BLACK and c != WHITE:
                 continue
-            for offset in [(1, 0), (0, 1), (1, 1), (1, -1)]:
+            for offset in [(1, 0), (0, 1), (1, 1), (1, -1)]: 
                 i = 1
                 num_found = 1
                 while self.board[point + i * offset[0] * self.NS + i * offset[1]] == c:
@@ -279,6 +570,23 @@ class GoBoard(object):
             if num_found >= 5:
                 return c
         
+        return EMPTY
+
+    def has_five_in_list(self, list) -> GO_COLOR:
+        """
+        Returns BLACK or WHITE if any five in a rows exist in the list.
+        EMPTY otherwise.
+        """
+        prev = BORDER
+        counter = 1
+        for stone in list:
+            if self.get_color(stone) == prev:
+                counter += 1
+            else:
+                counter = 1
+                prev = self.get_color(stone)
+            if counter == 5  and prev != EMPTY:
+                return prev
         return EMPTY
 
     def is_terminal(self):

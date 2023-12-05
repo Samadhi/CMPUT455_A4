@@ -402,12 +402,30 @@ class GtpConnection:
         if len(rlist) != 0:
             moves = self.format_moves(rlist)
             return ["BlockWin",moves]
+        board_copy = copy.deepcopy(self.board)
+        # checks for open 3
+        rlist = board_copy.OpenThree()
+        if len(rlist) != 0:
+            moves = self.format_moves(rlist)
+            return["OpenThree", moves]
+        board_copy = copy.deepcopy(self.board)
+        # checks for Double open three
+        rlist = board_copy.DoubleOpenThree()
+        if len(rlist) != 0:
+            moves = self.format_moves(rlist)
+            return["DoubleOpenThree", moves]
         # checks for open 4
         board_copy = copy.deepcopy(self.board)
         rlist = board_copy.OpenFour()
         if len(rlist) != 0:
             moves = self.format_moves(rlist)
             return ["OpenFour",moves]
+        board_copy = copy.deepcopy(self.board)
+        #checks for double open four
+        rlist = board_copy.DoubleOpenFour()
+        if len(rlist) != 0:
+            moves = self.format_moves(rlist)
+            return ["DoubleOpenFour",moves]
         board_copy = copy.deepcopy(self.board)
         #checks for captures
         rlist = board_copy.Capture()

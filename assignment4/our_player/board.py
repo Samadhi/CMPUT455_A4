@@ -13,7 +13,6 @@ The board uses a 1-dimensional representation with padding
 
 import numpy as np
 from typing import List, Tuple
-import random
 
 from board_base import (
     board_array_size,
@@ -232,31 +231,6 @@ class GoBoard(object):
             board_moves.append(self.last2_move)
         return board_moves
 
-    def full_board_detect_five_in_a_row(self) -> GO_COLOR:
-        """
-        Returns BLACK or WHITE if any five in a row is detected for the color
-        EMPTY otherwise.
-        Checks the entire board.
-        """
-        for point in range(self.maxpoint):
-            c = self.board[point]
-            if c != BLACK and c != WHITE:
-                continue
-            for offset in [(1, 0), (0, 1), (1, 1), (1, -1)]:
-                i = 1
-                num_found = 1
-                while self.board[point + i * offset[0] * self.NS + i * offset[1]] == c:
-                    i += 1
-                    num_found += 1
-                i = -1
-                while self.board[point + i * offset[0] * self.NS + i * offset[1]] == c:
-                    i -= 1
-                    num_found += 1
-                if num_found >= 5:
-                    return c
-        
-        return EMPTY
-    
     def detect_five_in_a_row(self) -> GO_COLOR:
         """
         Returns BLACK or WHITE if any five in a row is detected for the color
@@ -314,23 +288,3 @@ class GoBoard(object):
         state += str(self.black_captures)
         state += str(self.white_captures)
         return state
-    
-    def simulateMoves(self): 
-        allMoves = self.get_empty_points()
-
-        #current implementation is random, will need to make the different kinds
-
-        random.shuffle(allMoves)
-        i = 0
-        while not self.end_of_game():
-            self.play_move(allMoves[i],opponent(self.current_player))
-            i+= 1
-            
-        result1 = self.detect_five_in_a_row()
-
-        if self.get_captures(BLACK) >= 10 or result1 == BLACK:
-            return BLACK
-        elif self.get_captures(WHITE) >= 10 or result1 == WHITE:
-            return WHITE
-        elif self.get_empty_points().size == 0:
-            return EMPTY 
